@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Fluentify",
+    "version": "1.0",
+    "description": "Enhance your English sentences using ChatGPT API",
+    "permissions": ["storage"],
+    "host_permissions": ["https://api.openai.com/*"],
+    "background": {
+      "service_worker": "background.js"      
+    },
+    "action": {
+      "default_popup": "popup.html"
+    }
+  }
+  
