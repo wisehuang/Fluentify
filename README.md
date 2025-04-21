@@ -102,4 +102,3 @@ Fluentify is not affiliated with or endorsed by OpenAI. Use at your own risk and
 ---
 
 Enjoy writing fluently with **Fluentify**! 🚀
-```
