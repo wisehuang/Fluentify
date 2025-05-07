@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that improves English sentences for clarity, grammar, and style. Keep the meaning intact but make the sentence more professional and polished.'
+            content: 'You are an AI assistant that improves English sentences by making them clearer, more correct, and more professional. Keep the original meaning. Avoid overly polite or complicated language.'
           },
           {
             role: 'user',
