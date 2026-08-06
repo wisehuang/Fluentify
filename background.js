@@ -12,18 +12,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         'Authorization': `Bearer ${request.apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-5.2',
+        model: typeof request.model === 'string' && request.model.trim()
+          ? request.model.trim()
+          : 'gpt-5.2',
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant that improves English sentences by making them clearer, more correct, and more professional. Keep the original meaning. Avoid overly polite or complicated language.'
+            content: 'You are an AI assistant that makes English sentences clearer, correct, and more professional. Keep the original meaning. Use simple words. Do not use polite or complex language.'
           },
           {
             role: 'user',
             content: `Improve this English sentence: "${request.text}"`
           }
         ],
-        temperature: 0.7
+        reasoning_effort: 'none'
       })
     })
     .then(response => {

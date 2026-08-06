@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const apiKeyContainer = document.getElementById('apiKeyContainer');
   const refineContainer = document.getElementById('refineContainer');
   const apiKeyInput = document.getElementById('apiKey');
+  const openaiModelInput = document.getElementById('openaiModel');
   const saveApiKeyButton = document.getElementById('saveApiKey');
   const apiKeyStatus = document.getElementById('apiKeyStatus');
   const inputText = document.getElementById('inputText');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save API key
   saveApiKeyButton.addEventListener('click', function() {
     const apiKey = apiKeyInput.value.trim();
+    const openaiModel = openaiModelInput.value.trim() || 'gpt-5.2';
     
     if (!apiKey) {
       apiKeyStatus.textContent = 'Please enter a valid API key';
@@ -42,7 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Save API key
-    chrome.storage.sync.set({ 'openaiApiKey': apiKey }, function() {
+    chrome.storage.sync.set({
+      'openaiApiKey': apiKey,
+      'openaiModel': openaiModel
+    }, function() {
       apiKeyStatus.textContent = 'API key saved successfully';
       apiKeyStatus.style.color = '#0f9d58';
       
@@ -71,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
     resultContainer.style.display = 'none';
 
     // Get API key from storage
-    chrome.storage.sync.get('openaiApiKey', function(data) {
+    chrome.storage.sync.get(['openaiApiKey', 'openaiModel'], function(data) {
       if (!data.openaiApiKey) {
         loadingIndicator.style.display = 'none';
         error.textContent = 'API key not set, please configure settings first';
@@ -83,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
       chrome.runtime.sendMessage({
         action: "refineText",
         text: text,
-        apiKey: data.openaiApiKey
+        apiKey: data.openaiApiKey,
+        model: data.openaiModel || 'gpt-5.2'
       }, function(response) {
         loadingIndicator.style.display = 'none';
         
@@ -126,10 +132,11 @@ document.addEventListener('DOMContentLoaded', function() {
     apiKeyContainer.style.display = 'block';
     
     // Load saved API key
-    chrome.storage.sync.get('openaiApiKey', function(data) {
+    chrome.storage.sync.get(['openaiApiKey', 'openaiModel'], function(data) {
       if (data.openaiApiKey) {
         apiKeyInput.value = data.openaiApiKey;
       }
+      openaiModelInput.value = data.openaiModel || 'gpt-5.2';
     });
   });
 });
