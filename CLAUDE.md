@@ -27,8 +27,8 @@ Unless specifically requested, do not generate a new Markdown document for each 
 ### Core Components
 
 1. **popup.html / popup.js** - UI layer
-   - Two views: settings (API key, model, reasoning effort) and a chat-style enhancement view
-   - Tone chips, composer (Ctrl/Cmd+Enter sends), one result bubble with Copy and word-diff highlights
+   - Two views: settings (API key, model, reasoning effort) and an editor-style enhancement view (input on top, result card below)
+   - Composer (Ctrl/Cmd+Enter sends), tone chips (picking another tone re-runs when a result is shown), one result card with a Changes toggle, word-diff marks (`<mark>` added, `<del>` removed) and Copy
    - Communicates with background script via `chrome.runtime.sendMessage`
 
 2. **background.js** - Service worker (Manifest V3)
@@ -42,7 +42,7 @@ Unless specifically requested, do not generate a new Markdown document for each 
    - `TONES`, `DEFAULT_TONE`, `DEFAULT_MODEL`, `REASONING_EFFORTS`, `resolveTone`, `resolveReasoningEffort`
    - `buildMessages(text, tone)` builds the system and user messages
    - `parseResult(content)` returns `{ text, note }`
-   - `diffWords(original, revised)` word-level diff used for highlights
+   - `diffWords(original, revised)` word-level diff; tokens of `revised` flagged `changed`, plus `{ text, removed: true }` for words only in `original`
 
 4. **manifest.json** - Extension configuration
    - Manifest version 3
@@ -56,7 +56,7 @@ popup.js → chrome.runtime.sendMessage({action: "refineText", text, apiKey, mod
          → background.js builds the prompt and calls OpenAI API
          → background.js saves lastResult to chrome.storage.session
          → sendResponse({success, source, tone, text, note}) or {success: false, error}
-         → popup.js renders bubbles or an error
+         → popup.js renders the result card or an error card
 ```
 
 ### Storage
@@ -99,7 +99,7 @@ Edit `shared.js`:
 
 - `popup.html` contains inline styles and structure
 - `popup.js` handles all DOM interactions and state management
-- Chat bubbles use the `.bubble` class with pre-wrap whitespace handling; colors are CSS variables at the top of the `<style>` block
+- The result uses the `.card` / `.result` classes with pre-wrap whitespace handling; colors are CSS variables at the top of the `<style>` block
 
 ## Important Notes
 

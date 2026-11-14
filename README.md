@@ -6,9 +6,9 @@
 
 ## Features
 
-- ✨ **Refine English sentences:** Get one rewrite per sentence, with changed words highlighted and a one-line note on what was fixed.
+- ✨ **Refine English sentences:** Get one rewrite per sentence, with added words highlighted, removed words struck through, and a one-line note on what was fixed.
 - 🎭 **Tones:** Neutral, Formal, Work chat, or Casual. Your last choice is remembered.
-- 💬 **Chat-style popup:** Your sentence and the rewrite appear as chat bubbles. Press Ctrl/⌘ + Enter to send.
+- 📝 **Editor-style popup:** Type on top, read the rewrite in a full-width card below. Press Ctrl/⌘ + Enter to send; picking another tone redoes the rewrite.
 - 🖱️ **Right-click menu:** Select text on any page and choose **Enhance with Fluentify**.
 - 📋 **Copy to clipboard:** One click on the Copy button next to the rewrite.
 - 💾 **Keeps your place:** The draft and the last result survive closing the popup, until the browser is closed.
@@ -38,7 +38,7 @@ Clone this repository.
 1. Click the Fluentify icon in your Chrome toolbar.
 2. **First time:** Enter your OpenAI API key (starts with `sk-`) and save it.
 3. Pick a tone and enter the English sentence you want to enhance.
-4. Click the send button or press Ctrl/⌘ + Enter. The rewrite appears as a chat bubble.
+4. Click the send button or press Ctrl/⌘ + Enter. The rewrite appears in the card below; use **Changes** to switch between the marked-up and clean text, and **Copy** to copy it.
 5. Click **Copy** next to the rewrite.
 
 You can also select text on a web page, right-click, and choose **Enhance with Fluentify**. If the popup does not open by itself, click the Fluentify icon (it shows a badge).
