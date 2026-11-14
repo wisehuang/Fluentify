@@ -60,7 +60,7 @@ test('parseResult rejects an empty reply', () => {
 });
 
 test('diffWords flags only words that changed and keeps the text intact', () => {
-  const tokens = diffWords('i has a apple today', 'I have an apple today');
+  const tokens = diffWords('i has a apple today', 'I have an apple today').filter(t => !t.removed);
   assert.equal(tokens.map(t => t.text).join(''), 'I have an apple today');
   assert.deepEqual(
     tokens.filter(t => t.changed).map(t => t.text),
@@ -76,4 +76,27 @@ test('diffWords never flags whitespace and handles empty input', () => {
   ]);
   assert.deepEqual(diffWords('hello', ''), []);
   assert.ok(diffWords('a b', 'a\nc b').every(t => !/^\s+$/.test(t.text) || !t.changed));
+});
+
+test('diffWords interleaves words removed from the original', () => {
+  const tokens = diffWords('i has a apple today', 'I have an apple today');
+  assert.deepEqual(tokens.filter(t => t.removed).map(t => t.text), ['i', 'has', 'a']);
+  assert.equal(tokens.findIndex(t => t.removed), 0);
+
+  const trailing = diffWords('a b c', 'a');
+  assert.deepEqual(trailing, [
+    { text: 'a', changed: false },
+    { text: 'b', removed: true },
+    { text: 'c', removed: true }
+  ]);
+
+  const middle = diffWords('we really should go', 'we should go');
+  assert.deepEqual(middle.filter(t => t.removed).map(t => t.text), ['really']);
+  assert.equal(middle.filter(t => !t.removed).map(t => t.text).join(''), 'we should go');
+});
+
+test('diffWords skips the diff, and removed words, past the size limit', () => {
+  const long = Array.from({ length: 600 }, (_, i) => `w${i}`).join(' ');
+  const tokens = diffWords(long, `${long} extra`);
+  assert.ok(tokens.every(t => !t.removed && !t.changed));
 });

@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   let currentTone = DEFAULT_TONE;
   let hasApiKey = false;
   let busy = false;
+  let hasOutput = false;
+  let showChanges = true;
   let draftTimer = null;
 
   // ---------- storage ----------
@@ -67,16 +69,20 @@ document.addEventListener('DOMContentLoaded', async function() {
       chip.textContent = tone.label;
       chip.setAttribute('role', 'radio');
       chip.setAttribute('aria-checked', String(key === currentTone));
+      chip.disabled = busy;
       chip.addEventListener('click', function() {
+        if (key === currentTone) return;
         currentTone = key;
         chrome.storage.local.set({ tone: key });
         renderTones();
+        // A result is already on screen: redo it in the new tone.
+        if (hasOutput && inputText.value.trim()) enhance();
       });
       tones.appendChild(chip);
     }
   }
 
-  // ---------- chat rendering ----------
+  // ---------- result rendering ----------
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -85,37 +91,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     return node;
   }
 
-  function systemLine(text, isError) {
-    return el('div', isError ? 'system error' : 'system', text);
-  }
-
-  function ownRow(text) {
-    const row = el('div', 'row own');
-    row.appendChild(el('div', 'bubble', text));
-    return row;
-  }
-
-  function otherRow(content, showAvatar) {
-    const row = el('div', 'row other');
-    const avatar = el('div', showAvatar ? 'avatar' : 'avatar spacer', 'F');
-    avatar.setAttribute('aria-hidden', 'true');
-    row.appendChild(avatar);
-    const bubble = el('div', 'bubble');
-    bubble.appendChild(content);
-    row.appendChild(bubble);
-    return row;
-  }
-
+  // Rewrite with added words in <mark> and words dropped from the source in <del>.
   function highlighted(source, rewrite) {
     const fragment = document.createDocumentFragment();
-    for (const token of diffWords(source, rewrite)) {
-      fragment.appendChild(token.changed ? el('mark', '', token.text) : document.createTextNode(token.text));
+    const tokens = diffWords(source, rewrite);
+    let lastWasWord = false;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (!token.removed) {
+        fragment.appendChild(token.changed ? el('mark', '', token.text) : document.createTextNode(token.text));
+        lastWasWord = /\S/.test(token.text);
+        continue;
+      }
+      const words = [token.text];
+      while (i + 1 < tokens.length && tokens[i + 1].removed) {
+        words.push(tokens[++i].text);
+      }
+      if (lastWasWord) fragment.appendChild(document.createTextNode(' '));
+      fragment.appendChild(el('del', '', words.join(' ')));
+      if (i + 1 < tokens.length) fragment.appendChild(document.createTextNode(' '));
+      lastWasWord = false;
     }
     return fragment;
   }
 
   function copyButton(text) {
-    const button = el('button', 'copy', 'Copy');
+    const button = el('button', 'primary', 'Copy');
     button.type = 'button';
     button.addEventListener('click', function() {
       navigator.clipboard.writeText(text).then(function() {
@@ -128,33 +129,50 @@ document.addEventListener('DOMContentLoaded', async function() {
     return button;
   }
 
-  function scrollToEnd() {
-    chat.scrollTop = chat.scrollHeight;
-  }
-
   function renderEmpty() {
-    chat.replaceChildren(systemLine('Pick a tone, type a sentence, and send.'));
+    hasOutput = false;
+    chat.replaceChildren(el('div', 'system', 'Type a sentence, pick a tone, and send.'));
   }
 
-  function renderLoading(source) {
+  function renderLoading() {
     const dots = el('span', 'typing');
     dots.append(el('i'), el('i'), el('i'));
-    chat.replaceChildren(ownRow(source), otherRow(dots, true));
-    scrollToEnd();
+    const card = el('div', 'card');
+    card.appendChild(dots);
+    chat.replaceChildren(card);
   }
 
-  function renderError(source, message) {
-    chat.replaceChildren(ownRow(source), systemLine(message, true));
-    scrollToEnd();
+  function renderError(message) {
+    hasOutput = true;
+    chat.replaceChildren(el('div', 'card error', message));
   }
 
   function renderResult(data) {
-    const toneLabel = TONES[resolveTone(data.tone)].label;
-    const row = otherRow(highlighted(data.source, data.text), true);
-    row.appendChild(copyButton(data.text));
-    const nodes = [ownRow(data.source), systemLine(toneLabel), row];
-    if (data.note) nodes.push(systemLine(data.note));
-    chat.replaceChildren(...nodes);
+    hasOutput = true;
+    const source = typeof data.source === 'string' ? data.source : '';
+    const card = el('div', 'card');
+
+    const head = el('div', 'card-head');
+    head.appendChild(el('span', 'tone-tag', TONES[resolveTone(data.tone)].label));
+    const toggle = el('button', 'toggle', 'Changes');
+    toggle.type = 'button';
+    head.appendChild(toggle);
+
+    const body = el('div', 'result');
+    function paint() {
+      toggle.setAttribute('aria-pressed', String(showChanges));
+      body.replaceChildren(showChanges ? highlighted(source, data.text) : document.createTextNode(data.text));
+    }
+    toggle.addEventListener('click', function() {
+      showChanges = !showChanges;
+      paint();
+    });
+    paint();
+
+    card.append(head, body);
+    if (data.note) card.appendChild(el('p', 'note', data.note));
+    card.appendChild(copyButton(data.text));
+    chat.replaceChildren(card);
     chat.scrollTop = 0;
   }
 
@@ -162,12 +180,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function autosize() {
     inputText.style.height = 'auto';
-    inputText.style.height = `${Math.min(inputText.scrollHeight + 2, 120)}px`;
+    inputText.style.height = `${Math.min(inputText.scrollHeight + 2, 160)}px`;
   }
 
   function setBusy(value) {
     busy = value;
     refineButton.disabled = value;
+    renderTones();
   }
 
   function sendToBackground(message) {
@@ -186,18 +205,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (busy) return;
     const text = inputText.value.trim();
     if (!text) {
-      chat.replaceChildren(systemLine('Please enter an English sentence to enhance', true));
+      renderError('Please enter an English sentence to enhance');
       return;
     }
 
     const settings = await loadSettings();
     if (!settings.openaiApiKey) {
-      renderError(text, 'API key not set, please configure settings first');
+      renderError('API key not set, please configure settings first');
       return;
     }
 
     setBusy(true);
-    renderLoading(text);
+    renderLoading();
     const response = await sendToBackground({
       action: 'refineText',
       text: text,
@@ -211,9 +230,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (response && response.success) {
       renderResult(response);
     } else if (response && response.error) {
-      renderError(text, response.error.startsWith('Chrome error') ? response.error : `Error: ${response.error}`);
+      renderError(response.error.startsWith('Chrome error') ? response.error : `Error: ${response.error}`);
     } else {
-      renderError(text, 'Unable to connect to API. Check your network connection and API key.');
+      renderError('Unable to connect to API. Check your network connection and API key.');
     }
   }
 

@@ -99,22 +99,20 @@ function parseResult(content) {
   return { text: stripQuotes(body), note: '' };
 }
 
-// Word-level diff. Returns the tokens of `revised`, each flagged `changed`
+// Word-level diff. Returns the tokens of `revised` in order, each flagged `changed`
 // when it is not part of the longest common subsequence with `original`.
+// Words that exist only in `original` are interleaved as { text, removed: true },
+// so dropping the removed tokens and joining the rest gives `revised` back.
 const DIFF_CELL_LIMIT = 250000;
 
 function diffWords(original, revised) {
+  const isSpace = token => /^\s+$/.test(token);
   const tokens = revised.match(/\s+|\S+/g) || [];
   const a = original.match(/\S+/g) || [];
-  const bIndexes = [];
-  tokens.forEach((token, i) => {
-    if (!/^\s+$/.test(token)) bIndexes.push(i);
-  });
-  const b = bIndexes.map(i => tokens[i]);
-  const result = tokens.map(text => ({ text, changed: false }));
+  const b = tokens.filter(token => !isSpace(token));
 
   if (a.length === 0 || b.length === 0 || a.length * b.length > DIFF_CELL_LIMIT) {
-    return result;
+    return tokens.map(text => ({ text, changed: false }));
   }
 
   const width = b.length + 1;
@@ -127,18 +125,29 @@ function diffWords(original, revised) {
     }
   }
 
+  const result = [];
   let i = 0;
   let j = 0;
-  while (j < b.length) {
-    if (i < a.length && a[i] === b[j]) {
+  for (const text of tokens) {
+    if (isSpace(text)) {
+      result.push({ text, changed: false });
+      continue;
+    }
+    while (i < a.length && a[i] !== b[j] && table[(i + 1) * width + j] >= table[i * width + j + 1]) {
+      result.push({ text: a[i], removed: true });
       i++;
-      j++;
-    } else if (i < a.length && table[(i + 1) * width + j] >= table[i * width + j + 1]) {
+    }
+    if (i < a.length && a[i] === b[j]) {
+      result.push({ text, changed: false });
       i++;
     } else {
-      result[bIndexes[j]].changed = true;
-      j++;
+      result.push({ text, changed: true });
     }
+    j++;
+  }
+  while (i < a.length) {
+    result.push({ text: a[i], removed: true });
+    i++;
   }
   return result;
 }
