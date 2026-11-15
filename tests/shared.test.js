@@ -8,6 +8,7 @@ const {
   resolveTone,
   resolveReasoningEffort,
   buildMessages,
+  containsChinese,
   parseResult,
   diffWords
 } = require('../shared.js');
@@ -32,6 +33,22 @@ test('buildMessages puts the tone style in the system prompt and the raw text in
   assert.ok(messages[0].content.includes(TONES.casual.style));
   assert.ok(messages[0].content.includes('JSON'));
   assert.deepEqual(messages[1], { role: 'user', content: 'i has a apple' });
+});
+
+test('buildMessages tells the model to translate Chinese in the same request', () => {
+  const messages = buildMessages('我明天會晚點到', 'work');
+  assert.equal(messages.length, 2);
+  assert.ok(messages[0].content.includes('translate it into English'));
+  assert.ok(messages[0].content.includes(TONES.work.style));
+  assert.deepEqual(messages[1], { role: 'user', content: '我明天會晚點到' });
+});
+
+test('containsChinese detects Chinese characters', () => {
+  assert.equal(containsChinese('我明天會晚點到'), true);
+  assert.equal(containsChinese('I will 遲到 tomorrow'), true);
+  assert.equal(containsChinese('I will be late tomorrow.'), false);
+  assert.equal(containsChinese(''), false);
+  assert.equal(containsChinese(undefined), false);
 });
 
 test('parseResult reads the rewrite and note from JSON', () => {

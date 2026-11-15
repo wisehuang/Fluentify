@@ -6,6 +6,7 @@
 
 ## Features
 
+- 🌏 **Chinese input:** Type Chinese and get it translated into English in the selected tone, in one request.
 - ✨ **Refine English sentences:** Get one rewrite per sentence, with added words highlighted, removed words struck through, and a one-line note on what was fixed.
 - 🎭 **Tones:** Neutral, Formal, Work chat, or Casual. Your last choice is remembered.
 - 📝 **Editor-style popup:** Type on top, read the rewrite in a full-width card below. Press Ctrl/⌘ + Enter to send; picking another tone redoes the rewrite.
@@ -37,7 +38,7 @@ Clone this repository.
 
 1. Click the Fluentify icon in your Chrome toolbar.
 2. **First time:** Enter your OpenAI API key (starts with `sk-`) and save it.
-3. Pick a tone and enter the English sentence you want to enhance.
+3. Pick a tone and enter the English (or Chinese) sentence you want to enhance.
 4. Click the send button or press Ctrl/⌘ + Enter. The rewrite appears in the card below; use **Changes** to switch between the marked-up and clean text, and **Copy** to copy it.
 5. Click **Copy** next to the rewrite.
 

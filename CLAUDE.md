@@ -40,7 +40,8 @@ Unless specifically requested, do not generate a new Markdown document for each 
 
 3. **shared.js** - Pure logic, no `chrome.*` or DOM (also loaded by popup.html and the Node tests)
    - `TONES`, `DEFAULT_TONE`, `DEFAULT_MODEL`, `REASONING_EFFORTS`, `resolveTone`, `resolveReasoningEffort`
-   - `buildMessages(text, tone)` builds the system and user messages
+   - `buildMessages(text, tone)` builds the system and user messages; the prompt also tells the model to translate Chinese input into English in the chosen tone (same single request)
+   - `containsChinese(text)` lets the popup show a "Translated" tag instead of the Changes diff for Chinese input
    - `parseResult(content)` returns `{ text, note }`
    - `diffWords(original, revised)` word-level diff; tokens of `revised` flagged `changed`, plus `{ text, removed: true }` for words only in `original`
 

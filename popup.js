@@ -154,14 +154,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const head = el('div', 'card-head');
     head.appendChild(el('span', 'tone-tag', TONES[resolveTone(data.tone)].label));
+    // A Chinese source is translated, so there is no word diff to show.
+    const translated = containsChinese(source);
     const toggle = el('button', 'toggle', 'Changes');
     toggle.type = 'button';
-    head.appendChild(toggle);
+    if (translated) {
+      head.appendChild(el('span', 'tone-tag', 'Translated'));
+    } else {
+      head.appendChild(toggle);
+    }
 
     const body = el('div', 'result');
     function paint() {
       toggle.setAttribute('aria-pressed', String(showChanges));
-      body.replaceChildren(showChanges ? highlighted(source, data.text) : document.createTextNode(data.text));
+      const diff = showChanges && !translated;
+      body.replaceChildren(diff ? highlighted(source, data.text) : document.createTextNode(data.text));
     }
     toggle.addEventListener('click', function() {
       showChanges = !showChanges;
@@ -205,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (busy) return;
     const text = inputText.value.trim();
     if (!text) {
-      renderError('Please enter an English sentence to enhance');
+      renderError('Please enter an English or Chinese sentence to enhance');
       return;
     }
 
