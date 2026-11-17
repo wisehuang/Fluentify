@@ -6,15 +6,16 @@
 
 ## Features
 
-- 🌏 **Chinese input:** Type Chinese and get it translated into English in the selected tone, in one request.
+- 🌏 **Chinese input:** Type Chinese and get it translated into English in the selected tone, in one request, with the English translated back into Chinese so you can check the meaning.
 - ✨ **Refine English sentences:** Get one rewrite per sentence, with added words highlighted, removed words struck through, and a one-line note on what was fixed.
-- 🎭 **Tones:** Neutral, Formal, Work chat, or Casual. Your last choice is remembered.
+- 🎭 **Tones:** Neutral, Formal, Work chat, or Casual, plus up to 8 custom tones you describe in Settings. Your last choice is remembered.
 - 📝 **Editor-style popup:** Type on top, read the rewrite in a full-width card below. Press Ctrl/⌘ + Enter to send; picking another tone redoes the rewrite.
 - 🖱️ **Right-click menu:** Select text on any page and choose **Enhance with Fluentify**.
-- 📋 **Copy to clipboard:** One click on the Copy button next to the rewrite.
+- 📋 **Copy to clipboard:** Click Copy, press Enter (Copy is focused after each result), or press Ctrl/⌘ + C. The popup closes after copying unless you turn that off in Settings; you can also have every result copied automatically.
+- 🔁 **Retry, clear and cancel:** Retry asks for another rewrite in the same tone, the × button clears the draft and the result, and Cancel stops a slow request (requests also time out after 120 seconds).
 - 💾 **Keeps your place:** The draft and the last result survive closing the popup, until the browser is closed.
 - 🔑 **Local API key storage:** Your OpenAI API key is stored on this device only (`chrome.storage.local`).
-- ⚙️ **Settings panel:** Update your API key, model and reasoning effort at any time.
+- ⚙️ **Settings panel:** Update your API key, model, reasoning effort, copy behavior and custom tones at any time.
 
 ---
 
@@ -39,8 +40,8 @@ Clone this repository.
 1. Click the Fluentify icon in your Chrome toolbar.
 2. **First time:** Enter your OpenAI API key (starts with `sk-`) and save it.
 3. Pick a tone and enter the English (or Chinese) sentence you want to enhance.
-4. Click the send button or press Ctrl/⌘ + Enter. The rewrite appears in the card below; use **Changes** to switch between the marked-up and clean text, and **Copy** to copy it.
-5. Click **Copy** next to the rewrite.
+4. Click the send button or press Ctrl/⌘ + Enter. The rewrite appears in the card below; use **Changes** to switch between the marked-up and clean text, and **Retry** for another version.
+5. Click **Copy** (or press Enter or Ctrl/⌘ + C). By default the popup closes after copying.
 
 You can also select text on a web page, right-click, and choose **Enhance with Fluentify**. If the popup does not open by itself, click the Fluentify icon (it shows a badge).
 
@@ -85,7 +86,7 @@ fluentify/
 
 ## Customization
 
-- Tones and the prompt live in `shared.js` (`TONES`, `buildMessages`).
+- Built-in tones and the prompt live in `shared.js` (`TONES`, `buildMessages`); custom tones are added in Settings.
 - The default model is `DEFAULT_MODEL` in `shared.js`; you can also set a model in Settings.
 - To update the UI, modify `popup.html` and `popup.js`.
 - Run the unit tests with `node --test`.
