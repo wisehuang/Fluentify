@@ -27,22 +27,26 @@ Unless specifically requested, do not generate a new Markdown document for each 
 ### Core Components
 
 1. **popup.html / popup.js** - UI layer
-   - Two views: settings (API key, model, reasoning effort) and an editor-style enhancement view (input on top, result card below)
-   - Composer (Ctrl/Cmd+Enter sends), tone chips (picking another tone re-runs when a result is shown), one result card with a Changes toggle, word-diff marks (`<mark>` added, `<del>` removed) and Copy
+   - Two views: settings (API key, model, reasoning effort, auto-copy, close-after-copy, custom tones) and an editor-style enhancement view (input on top, result card below)
+   - Composer (Ctrl/Cmd+Enter sends, × clears draft and result), tone chips (built-in plus custom; picking another tone re-runs when a result is shown), a loading card with Cancel, one result card with a Changes toggle, word-diff marks (`<mark>` added, `<del>` removed), a Meaning line for Chinese input, Retry and Copy
+   - Copy is focused after each result; Ctrl/Cmd+C copies the result when no text is selected; an explicit copy closes the popup when `closeAfterCopy` is on (auto-copy never closes it)
+   - Custom tones save immediately on add/delete, independent of the Save button
    - Communicates with background script via `chrome.runtime.sendMessage`
 
 2. **background.js** - Service worker (Manifest V3)
    - Loads `shared.js` via `importScripts`
    - Listens for messages from popup via `chrome.runtime.onMessage`
+   - Keeps one in-flight request (`AbortController`): `{action: "cancelRefine"}` aborts it, a new request replaces it, and it times out after `REQUEST_TIMEOUT_MS` (120 s); aborts reply `{success: false, cancelled: true, error}` for cancel/replace
    - Calls `https://api.openai.com/v1/chat/completions` with `reasoning_effort` (from Settings, default `none`) and `response_format: { type: 'json_object' }`; on a 400 naming one of those parameters it drops it and retries
    - Registers the "Enhance with Fluentify" context menu for selected text; stores the selection as the draft, sets `autoRun`, and tries `chrome.action.openPopup()` (falls back to a badge)
    - Writes `lastResult` to `chrome.storage.session` and returns it via `sendResponse`
 
 3. **shared.js** - Pure logic, no `chrome.*` or DOM (also loaded by popup.html and the Node tests)
-   - `TONES`, `DEFAULT_TONE`, `DEFAULT_MODEL`, `REASONING_EFFORTS`, `resolveTone`, `resolveReasoningEffort`
-   - `buildMessages(text, tone)` builds the system and user messages; the prompt also tells the model to translate Chinese input into English in the chosen tone (same single request)
+   - `TONES`, `DEFAULT_TONE`, `DEFAULT_MODEL`, `REASONING_EFFORTS`, `resolveTone(tone, customTones)`, `resolveReasoningEffort`
+   - `normalizeCustomTones(list)` validates `[{ id: 'custom-…', label, style }]` (max `MAX_CUSTOM_TONES` = 8, label 24 / style 300 chars); `toneTable(customTones)` merges them after the built-ins
+   - `buildMessages(text, tone, customTones)` builds the system and user messages; the prompt also tells the model to translate Chinese input into English in the chosen tone (same single request) and, for Chinese input only, asks for a `meaning` field (the rewrite back in Chinese, same script as the input)
    - `containsChinese(text)` lets the popup show a "Translated" tag instead of the Changes diff for Chinese input
-   - `parseResult(content)` returns `{ text, note }`
+   - `parseResult(content)` returns `{ text, note, meaning }`
    - `diffWords(original, revised)` word-level diff; tokens of `revised` flagged `changed`, plus `{ text, removed: true }` for words only in `original`
 
 4. **manifest.json** - Extension configuration
@@ -53,16 +57,16 @@ Unless specifically requested, do not generate a new Markdown document for each 
 ### Message Flow
 
 ```
-popup.js → chrome.runtime.sendMessage({action: "refineText", text, apiKey, model, reasoningEffort, tone})
+popup.js → chrome.runtime.sendMessage({action: "refineText", text, apiKey, model, reasoningEffort, tone, customTones})
          → background.js builds the prompt and calls OpenAI API
          → background.js saves lastResult to chrome.storage.session
-         → sendResponse({success, source, tone, text, note}) or {success: false, error}
+         → sendResponse({success, source, tone, toneLabel, text, note, meaning}) or {success: false, cancelled?, error}
          → popup.js renders the result card or an error card
 ```
 
 ### Storage
 
-- `chrome.storage.local`: `openaiApiKey` (must start with `sk-`), `openaiModel`, `reasoningEffort`, `tone`
+- `chrome.storage.local`: `openaiApiKey` (must start with `sk-`), `openaiModel`, `reasoningEffort`, `tone`, `customTones`, `autoCopy` (default false), `closeAfterCopy` (default true)
 - `chrome.storage.session`: `draft`, `lastResult`, `autoRun`
 - `chrome.storage.sync` is legacy: popup.js `loadSettings()` moves an old key to local and removes the synced copy
 
@@ -93,7 +97,7 @@ node --test
 Edit `shared.js`:
 - `DEFAULT_MODEL` for the default model
 - `REASONING_EFFORTS` / `DEFAULT_REASONING_EFFORT` for the Settings dropdown
-- `TONES` to add or change a tone (the popup renders its chips from this object)
+- `TONES` to add or change a built-in tone (the popup renders its chips from `toneTable`, built-ins first, then custom tones)
 - `buildMessages` for the shared rewrite rules and the JSON reply shape
 
 ### UI Modifications
