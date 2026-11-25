@@ -24,6 +24,12 @@
       font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans TC", Arial, sans-serif;
       background: #FFFFFF;
     }
+    /* Chrome sizes the popup to the body (380px). Browsers that open a wider,
+       fixed popup (e.g. Orion) would leave a blank strip, so fill it there.
+       420px stays above 380px plus a classic scrollbar in Chrome. */
+    @media (min-width: 420px) {
+      body { width: auto; }
+    }
     button { font: inherit; cursor: pointer; }
     button:focus-visible, input:focus-visible, textarea:focus-visible {
       outline: 2px solid var(--green-dark);
